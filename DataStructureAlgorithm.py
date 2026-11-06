@@ -3,6 +3,7 @@
 #com interface visual
 
 
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 
@@ -20,7 +21,7 @@ class SistemaEstruturas:
         # Vetor compartilhado
         self.dados = []
 
-        # Controle da estrutura
+        # Controle das estruturas
         self.tipo_estrutura = None
         self.capacidade = 0
 
@@ -28,6 +29,11 @@ class SistemaEstruturas:
         self.inicio = 0
         self.fim = 0
         self.quantidade = 0
+
+        # Referências dos componentes gráficos
+        self.arvore = None
+        self.informacao = None
+        self.resultado_ordenacao = None
 
         self.cor_fundo = "#F1F5F9"
         self.cor_menu = "#172554"
@@ -72,7 +78,6 @@ class SistemaEstruturas:
 
     def criar_layout(self):
 
-        # Menu lateral
         self.menu_lateral = tk.Frame(
             self.root,
             bg=self.cor_menu,
@@ -82,22 +87,38 @@ class SistemaEstruturas:
         self.menu_lateral.pack(side="left", fill="y")
         self.menu_lateral.pack_propagate(False)
 
-        titulo = tk.Label(
+        tk.Label(
             self.menu_lateral,
             text="ESTRUTURAS\nDE DADOS",
             bg=self.cor_menu,
             fg="white",
             font=("Arial", 19, "bold"),
             justify="center"
+        ).pack(pady=35)
+
+        self.criar_botao_menu(
+            "⌂  Início", self.mostrar_inicio
         )
 
-        titulo.pack(pady=35)
+        self.criar_botao_menu(
+            "▤  Pilha",
+            lambda: self.mostrar_estrutura("PILHA")
+        )
 
-        self.criar_botao_menu("⌂  Início", self.mostrar_inicio)
-        self.criar_botao_menu("▤  Pilha", lambda: self.mostrar_estrutura("PILHA"))
-        self.criar_botao_menu("⇄  Fila", lambda: self.mostrar_estrutura("FILA"))
-        self.criar_botao_menu("⟳  Fila Circular", lambda: self.mostrar_estrutura("FILA CIRCULAR"))
-        self.criar_botao_menu("↕  Ordenar", self.mostrar_ordenacao)
+        self.criar_botao_menu(
+            "⇄  Fila",
+            lambda: self.mostrar_estrutura("FILA")
+        )
+
+        self.criar_botao_menu(
+            "⟳  Fila Circular",
+            lambda: self.mostrar_estrutura("FILA CIRCULAR")
+        )
+
+        self.criar_botao_menu(
+            "↕  Ordenar",
+            self.mostrar_ordenacao
+        )
 
         tk.Frame(
             self.menu_lateral,
@@ -106,7 +127,6 @@ class SistemaEstruturas:
 
         self.criar_botao_menu("✕  Sair", self.sair)
 
-        # Área principal
         self.area_principal = tk.Frame(
             self.root,
             bg=self.cor_fundo
@@ -120,7 +140,7 @@ class SistemaEstruturas:
 
     def criar_botao_menu(self, texto, comando):
 
-        botao = tk.Button(
+        tk.Button(
             self.menu_lateral,
             text=texto,
             command=comando,
@@ -134,11 +154,45 @@ class SistemaEstruturas:
             padx=25,
             pady=14,
             cursor="hand2"
+        ).pack(fill="x", padx=10, pady=3)
+
+    def criar_botao(
+        self, parent, texto, comando,
+        cor=None, largura=18
+    ):
+
+        if cor is None:
+            cor = self.cor_primaria
+
+        return tk.Button(
+            parent,
+            text=texto,
+            command=comando,
+            bg=cor,
+            fg="white",
+            activebackground="#1D4ED8",
+            activeforeground="white",
+            font=("Arial", 10, "bold"),
+            relief="flat",
+            padx=12,
+            pady=11,
+            width=largura,
+            cursor="hand2"
         )
 
-        botao.pack(fill="x", padx=10, pady=3)
+    # ==========================================
+    # GERENCIAMENTO DAS TELAS
+    # ==========================================
 
     def limpar_area(self):
+
+        # IMPORTANTE:
+        # Limpa as referências dos widgets antigos
+        # antes de destruir os componentes gráficos.
+
+        self.arvore = None
+        self.informacao = None
+        self.resultado_ordenacao = None
 
         for widget in self.area_principal.winfo_children():
             widget.destroy()
@@ -160,28 +214,6 @@ class SistemaEstruturas:
             fg="#64748B",
             font=("Arial", 11)
         ).pack(anchor="w", padx=35, pady=(0, 20))
-
-    def criar_botao(self, parent, texto, comando,
-                    cor=None, largura=18):
-
-        if cor is None:
-            cor = self.cor_primaria
-
-        return tk.Button(
-            parent,
-            text=texto,
-            command=comando,
-            bg=cor,
-            fg="white",
-            activebackground="#1D4ED8",
-            activeforeground="white",
-            font=("Arial", 10, "bold"),
-            relief="flat",
-            padx=12,
-            pady=11,
-            width=largura,
-            cursor="hand2"
-        )
 
     # ==========================================
     # TELA INICIAL
@@ -215,7 +247,7 @@ class SistemaEstruturas:
 
         tk.Label(
             quadro,
-            text="Selecione uma das opções para começar a utilizar o sistema.",
+            text="Selecione uma opção para começar.",
             bg="white",
             fg="#64748B",
             font=("Arial", 11)
@@ -230,14 +262,19 @@ class SistemaEstruturas:
         ).pack(anchor="w", pady=(20, 10))
 
         opcoes = [
-            ("PILHA", "Operações PUSH e POP", "PILHA"),
-            ("FILA", "Operações ENQUEUE e DEQUEUE", "FILA"),
-            ("FILA CIRCULAR", "Reutilização de posições", "FILA CIRCULAR"),
+            ("PILHA", "Operações PUSH e POP"),
+            ("FILA", "Operações ENQUEUE e DEQUEUE"),
+            ("FILA CIRCULAR", "Reutilização de posições")
         ]
 
-        for nome, descricao, tipo in opcoes:
+        for nome, descricao in opcoes:
 
-            linha = tk.Frame(quadro, bg="#F8FAFC", pady=12)
+            linha = tk.Frame(
+                quadro,
+                bg="#F8FAFC",
+                pady=12
+            )
+
             linha.pack(fill="x", pady=5)
 
             tk.Label(
@@ -261,7 +298,7 @@ class SistemaEstruturas:
             self.criar_botao(
                 linha,
                 "Acessar",
-                lambda t=tipo: self.mostrar_estrutura(t),
+                lambda t=nome: self.mostrar_estrutura(t),
                 largura=10
             ).pack(side="right", padx=10)
 
@@ -287,7 +324,6 @@ class SistemaEstruturas:
             "Crie a estrutura e gerencie seus elementos."
         )
 
-        # Painel de operações
         painel = tk.Frame(
             self.area_principal,
             bg="white",
@@ -346,9 +382,14 @@ class SistemaEstruturas:
             16
         ).grid(row=1, column=2, padx=5)
 
-        # Botões de extração e impressão
         botoes = tk.Frame(painel, bg="white")
-        botoes.grid(row=2, column=0, columnspan=3, pady=15)
+
+        botoes.grid(
+            row=2,
+            column=0,
+            columnspan=3,
+            pady=15
+        )
 
         self.criar_botao(
             botoes,
@@ -370,7 +411,8 @@ class SistemaEstruturas:
             "#64748B"
         ).pack(side="left", padx=5)
 
-        # Painel de visualização
+        # Área de visualização
+
         visual = tk.Frame(
             self.area_principal,
             bg="white",
@@ -378,7 +420,12 @@ class SistemaEstruturas:
             pady=15
         )
 
-        visual.pack(fill="both", expand=True, padx=35, pady=10)
+        visual.pack(
+            fill="both",
+            expand=True,
+            padx=35,
+            pady=10
+        )
 
         tk.Label(
             visual,
@@ -399,9 +446,17 @@ class SistemaEstruturas:
         self.arvore.heading("valor", text="Valor")
         self.arvore.heading("situacao", text="Situação")
 
-        self.arvore.column("posicao", width=100, anchor="center")
-        self.arvore.column("valor", width=150, anchor="center")
-        self.arvore.column("situacao", width=180, anchor="center")
+        self.arvore.column(
+            "posicao", width=100, anchor="center"
+        )
+
+        self.arvore.column(
+            "valor", width=150, anchor="center"
+        )
+
+        self.arvore.column(
+            "situacao", width=180, anchor="center"
+        )
 
         self.arvore.pack(fill="both", expand=True)
 
@@ -416,6 +471,7 @@ class SistemaEstruturas:
         self.informacao.pack(anchor="w", pady=12)
 
         self.tipo_tela = tipo
+
         self.atualizar_visualizacao()
 
     # ==========================================
@@ -425,24 +481,29 @@ class SistemaEstruturas:
     def criar_estrutura(self, tipo):
 
         try:
+
             tamanho = int(self.entrada_capacidade.get())
 
             if tamanho <= 0:
                 raise ValueError
 
         except ValueError:
+
             messagebox.showerror(
                 "Erro",
                 "Informe uma capacidade inteira maior que zero."
             )
+
             return
 
         # Reinicializa o vetor compartilhado
+
         self.dados = []
         self.tipo_estrutura = tipo
         self.capacidade = tamanho
 
-        # Reinicializa a fila circular
+        # Reinicializa os controles circulares
+
         self.inicio = 0
         self.fim = 0
         self.quantidade = 0
@@ -464,18 +525,22 @@ class SistemaEstruturas:
     def validar_estrutura(self, tipo):
 
         if self.tipo_estrutura is None:
+
             messagebox.showwarning(
                 "Atenção",
                 "Crie primeiro uma estrutura!"
             )
+
             return False
 
         if self.tipo_estrutura != tipo:
+
             messagebox.showwarning(
                 "Atenção",
                 "A estrutura ativa é " + self.tipo_estrutura +
                 ". Crie esta estrutura antes de utilizá-la."
             )
+
             return False
 
         return True
@@ -495,7 +560,7 @@ class SistemaEstruturas:
         return len(self.dados) >= self.capacidade
 
     # ==========================================
-    # ARMAZENAR
+    # ARMAZENAR VALORES
     # ==========================================
 
     def armazenar(self, tipo):
@@ -504,19 +569,25 @@ class SistemaEstruturas:
             return
 
         if self.esta_cheia():
+
             messagebox.showerror(
                 "Erro",
                 "A estrutura está cheia!"
             )
+
             return
 
         try:
+
             valor = int(self.entrada_valor.get())
+
         except ValueError:
+
             messagebox.showerror(
                 "Erro",
                 "Digite um número inteiro válido!"
             )
+
             return
 
         if tipo == "PILHA":
@@ -529,6 +600,7 @@ class SistemaEstruturas:
             self.inserir_circular(valor)
 
         self.entrada_valor.delete(0, tk.END)
+
         self.atualizar_visualizacao()
 
     def push(self, valor):
@@ -544,10 +616,11 @@ class SistemaEstruturas:
         self.dados[self.fim] = valor
 
         self.fim = (self.fim + 1) % self.capacidade
+
         self.quantidade += 1
 
     # ==========================================
-    # EXTRAIR
+    # EXTRAIR VALORES
     # ==========================================
 
     def extrair(self, tipo):
@@ -556,10 +629,12 @@ class SistemaEstruturas:
             return
 
         if self.esta_vazia():
+
             messagebox.showwarning(
                 "Atenção",
                 "Não existem elementos para extrair!"
             )
+
             return
 
         if tipo == "PILHA":
@@ -593,36 +668,44 @@ class SistemaEstruturas:
         self.dados[self.inicio] = None
 
         self.inicio = (self.inicio + 1) % self.capacidade
+
         self.quantidade -= 1
 
         return valor
 
     # ==========================================
-    # CONTEÚDO LÓGICO
+    # OBTER CONTEÚDO LÓGICO
     # ==========================================
 
     def obter_conteudo(self):
 
         if self.tipo_estrutura == "FILA CIRCULAR":
 
+            if self.capacidade == 0:
+                return []
+
             return [
-                self.dados[(self.inicio + i) % self.capacidade]
+                self.dados[
+                    (self.inicio + i) % self.capacidade
+                ]
                 for i in range(self.quantidade)
             ]
 
         return self.dados.copy()
 
     # ==========================================
-    # IMPRIMIR / ATUALIZAR VISUALIZAÇÃO
+    # IMPRIMIR CONTEÚDO
     # ==========================================
 
     def imprimir(self):
 
         if self.tipo_estrutura is None:
+
             messagebox.showwarning(
                 "Atenção",
                 "Nenhuma estrutura foi criada!"
             )
+
             return
 
         conteudo = self.obter_conteudo()
@@ -632,88 +715,133 @@ class SistemaEstruturas:
             f"{self.tipo_estrutura}:\n\n{conteudo}"
         )
 
+    # ==========================================
+    # ATUALIZAR VISUALIZAÇÃO
+    # ==========================================
+
     def atualizar_visualizacao(self):
 
-        if not hasattr(self, "arvore"):
+        # CORREÇÃO PRINCIPAL:
+        # Verifica se a tabela existe antes de utilizá-la.
+        # Quando a tela de ordenação está aberta, não há
+        # Treeview ativo para atualizar.
+
+        if self.arvore is None:
             return
 
-        for item in self.arvore.get_children():
-            self.arvore.delete(item)
+        if not self.arvore.winfo_exists():
+            return
 
-        if self.tipo_estrutura is None:
-            self.informacao.config(
-                text="Nenhuma estrutura criada."
+        if self.informacao is None:
+            return
+
+        if not self.informacao.winfo_exists():
+            return
+
+        try:
+
+            # Limpa a tabela
+
+            for item in self.arvore.get_children():
+                self.arvore.delete(item)
+
+            if self.tipo_estrutura is None:
+
+                self.informacao.config(
+                    text="Nenhuma estrutura criada."
+                )
+
+                return
+
+            # FILA CIRCULAR
+
+            if self.tipo_estrutura == "FILA CIRCULAR":
+
+                for i in range(self.capacidade):
+
+                    ocupado = (
+                        (i - self.inicio) % self.capacidade
+                        < self.quantidade
+                    )
+
+                    valor = self.dados[i]
+
+                    if ocupado:
+
+                        situacao = "Ocupado"
+
+                        if i == self.inicio:
+                            situacao += " - Início"
+
+                        ultimo = (
+                            (self.fim - 1) % self.capacidade
+                        )
+
+                        if i == ultimo:
+                            situacao += " - Último"
+
+                        exibicao = valor
+
+                    else:
+
+                        situacao = "Livre"
+                        exibicao = "-"
+
+                    self.arvore.insert(
+                        "",
+                        "end",
+                        values=(i, exibicao, situacao)
+                    )
+
+            # PILHA E FILA
+
+            else:
+
+                for i, valor in enumerate(self.dados):
+
+                    if self.tipo_estrutura == "PILHA":
+
+                        situacao = (
+                            "Topo"
+                            if i == len(self.dados) - 1
+                            else "Armazenado"
+                        )
+
+                    else:
+
+                        situacao = (
+                            "Início"
+                            if i == 0
+                            else "Fim"
+                            if i == len(self.dados) - 1
+                            else "Armazenado"
+                        )
+
+                    self.arvore.insert(
+                        "",
+                        "end",
+                        values=(i, valor, situacao)
+                    )
+
+            total = (
+                self.quantidade
+                if self.tipo_estrutura == "FILA CIRCULAR"
+                else len(self.dados)
             )
+
+            self.informacao.config(
+                text=f"Estrutura: {self.tipo_estrutura} | "
+                     f"Elementos: {total} | "
+                     f"Capacidade: {self.capacidade}"
+            )
+
+        except tk.TclError:
+            # Evita erros caso algum widget seja destruído
+            # durante uma mudança de tela.
             return
-
-        if self.tipo_estrutura == "FILA CIRCULAR":
-
-            for i in range(self.capacidade):
-
-                ocupado = (
-                    (i - self.inicio) % self.capacidade
-                    < self.quantidade
-                )
-
-                valor = self.dados[i]
-
-                if ocupado:
-                    situacao = "Ocupado"
-
-                    if i == self.inicio:
-                        situacao += " - Início"
-
-                    if i == (self.fim - 1) % self.capacidade:
-                        situacao += " - Último"
-
-                    exibicao = valor
-
-                else:
-                    situacao = "Livre"
-                    exibicao = "-"
-
-                self.arvore.insert(
-                    "",
-                    "end",
-                    values=(i, exibicao, situacao)
-                )
-
-        else:
-
-            for i, valor in enumerate(self.dados):
-
-                if self.tipo_estrutura == "PILHA":
-                    situacao = (
-                        "Topo" if i == len(self.dados) - 1
-                        else "Armazenado"
-                    )
-                else:
-                    situacao = (
-                        "Início" if i == 0
-                        else "Fim" if i == len(self.dados) - 1
-                        else "Armazenado"
-                    )
-
-                self.arvore.insert(
-                    "",
-                    "end",
-                    values=(i, valor, situacao)
-                )
-
-        total = (
-            self.quantidade
-            if self.tipo_estrutura == "FILA CIRCULAR"
-            else len(self.dados)
-        )
-
-        self.informacao.config(
-            text=f"Estrutura: {self.tipo_estrutura}  |  "
-                 f"Elementos: {total}  |  "
-                 f"Capacidade: {self.capacidade}"
-        )
 
     # ==========================================
-    # ALGORITMOS DE ORDENAÇÃO
+    # BUBBLE SORT
     # ==========================================
 
     def bubble_sort(self, lista):
@@ -727,10 +855,15 @@ class SistemaEstruturas:
                 if lista[j] > lista[j + 1]:
 
                     lista[j], lista[j + 1] = (
-                        lista[j + 1], lista[j]
+                        lista[j + 1],
+                        lista[j]
                     )
 
         return lista
+
+    # ==========================================
+    # SELECTION SORT
+    # ==========================================
 
     def selection_sort(self, lista):
 
@@ -746,21 +879,28 @@ class SistemaEstruturas:
                     menor = j
 
             lista[i], lista[menor] = (
-                lista[menor], lista[i]
+                lista[menor],
+                lista[i]
             )
 
         return lista
+
+    # ==========================================
+    # INSERTION SORT
+    # ==========================================
 
     def insertion_sort(self, lista):
 
         for i in range(1, len(lista)):
 
             chave = lista[i]
+
             j = i - 1
 
             while j >= 0 and lista[j] > chave:
 
                 lista[j + 1] = lista[j]
+
                 j -= 1
 
             lista[j + 1] = chave
@@ -787,7 +927,11 @@ class SistemaEstruturas:
             pady=30
         )
 
-        painel.pack(fill="x", padx=35, pady=20)
+        painel.pack(
+            fill="x",
+            padx=35,
+            pady=20
+        )
 
         algoritmos = [
             ("Bubble Sort", self.bubble_sort),
@@ -797,7 +941,12 @@ class SistemaEstruturas:
 
         for nome, funcao in algoritmos:
 
-            linha = tk.Frame(painel, bg="#F8FAFC", pady=15)
+            linha = tk.Frame(
+                painel,
+                bg="#F8FAFC",
+                pady=15
+            )
+
             linha.pack(fill="x", pady=7)
 
             tk.Label(
@@ -813,7 +962,8 @@ class SistemaEstruturas:
             self.criar_botao(
                 linha,
                 "Executar",
-                lambda f=funcao, n=nome: self.ordenar(f, n),
+                lambda f=funcao, n=nome:
+                    self.ordenar(f, n),
                 largura=15
             ).pack(side="right", padx=10)
 
@@ -829,7 +979,8 @@ class SistemaEstruturas:
             text="Aguardando execução de um algoritmo.",
             bg=self.cor_fundo,
             fg=self.cor_texto,
-            font=("Arial", 12)
+            font=("Arial", 12),
+            justify="left"
         )
 
         self.resultado_ordenacao.pack(pady=15)
@@ -847,6 +998,7 @@ class SistemaEstruturas:
                 "Escolha primeiro Pilha, Fila ou Fila Circular "
                 "e crie uma estrutura!"
             )
+
             return
 
         lista = self.obter_conteudo()
@@ -857,11 +1009,14 @@ class SistemaEstruturas:
                 "Atenção",
                 "Não existem valores para ordenar!"
             )
+
             return
 
         antes = lista.copy()
 
         resultado = algoritmo(lista)
+
+        # Atualiza a estrutura original
 
         if self.tipo_estrutura == "FILA CIRCULAR":
 
@@ -877,12 +1032,29 @@ class SistemaEstruturas:
 
             self.dados[:] = resultado
 
+        # Atualiza a tabela somente se estiver na tela
+        # de estrutura. Na tela de ordenação, não existe
+        # Treeview, e a atualização será feita ao retornar.
+
         self.atualizar_visualizacao()
 
-        self.resultado_ordenacao.config(
-            text=f"{nome} executado!\n"
-                 f"Antes: {antes}\n"
-                 f"Depois: {resultado}"
+        # Atualiza o resultado da ordenação
+
+        if (
+            self.resultado_ordenacao is not None
+            and self.resultado_ordenacao.winfo_exists()
+        ):
+
+            self.resultado_ordenacao.config(
+                text=f"{nome} executado com sucesso!\n\n"
+                     f"Antes: {antes}\n\n"
+                     f"Depois: {resultado}"
+            )
+
+        messagebox.showinfo(
+            "Ordenação concluída",
+            f"{nome} executado com sucesso!\n\n"
+            f"Resultado: {resultado}"
         )
 
     # ==========================================
